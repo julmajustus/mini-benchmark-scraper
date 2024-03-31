@@ -2,6 +2,7 @@ import os
 import re
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from collections import defaultdict
 
 # Function to parse log files and extract test data, system information, and kernel versions
@@ -89,20 +90,34 @@ def plot_horizontal_bar_chart_with_annotations(average_times, mode, kernel_versi
     plt.savefig(f'average_performance_comparison_horizontal_{mode}.png')
     plt.close()
 
+# Define a color palette
+colors = list(mcolors.TABLEAU_COLORS.keys())
+
 # Function to plot performance comparison between different kernel versions
 def plot_kernel_version_comparison(average_times, mode, kernel_versions):
     test_names = list(average_times[0].keys())
     test_names.reverse()
     num_tests = len(test_names)
+    num_kernel_versions = len(kernel_versions)
 
-    fig, ax = plt.subplots(figsize=(12, num_tests + 4))
+    # Calculate the figsize based on the number of tests and kernel versions
+    fig_width = 12  # base width
+    fig_height = num_tests + num_kernel_versions  # base height
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+
+    # Calculate the width of each bar based on the number of kernel versions
+    bar_width = 0.9 / num_kernel_versions  # Adjust this value as needed
+
+    # Calculate font size based on bar_width, font_scale_factor, and num_kernel_versions
+    font_size = 16 - num_kernel_versions * 0.24
 
     for i, avg_times in enumerate(average_times):
         kernel_version = kernel_versions[i]
         values = list(avg_times.values())[::-1]
-        ax.barh(np.arange(num_tests) + i * 0.1, values, height=0.1, label=kernel_version)
+        color = colors[i % len(colors)]  # Use modulo to loop through the color palette
+        ax.barh(np.arange(num_tests) + i * bar_width, values, height=bar_width, label=kernel_version, color=color)
         for j, value in enumerate(values):
-            ax.text(value, j + i * 0.1, f'{value:.2f}',fontsize='small', ha='left', va='center')
+            ax.text(value, j + i * bar_width, f'{value:.2f}', fontsize=font_size, ha='left', va='center', color='black')
 
     ax.set_yticks(np.arange(num_tests))
     ax.set_yticklabels(test_names)
