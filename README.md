@@ -2,6 +2,7 @@
 
 Mini Benchmark Scraper is a Python script designed to extract and parse data from Mini Benchmarker log files, providing users with insights into system performance through benchmark analysis.
 
+
 ## Features
 
 - **Data Extraction:** Extracts relevant data from Mini Benchmarker log files.
@@ -25,3 +26,7 @@ Mini Benchmark Scraper is a Python script designed to extract and parse data fro
    python benchmark_scraper.py```
 
 3. Once the script has completed execution, open the generated HTML page (test_performance.html) in your web browser to view the results.
+
+## Mini Benchmarker Repository
+
+The Mini Benchmarker script used to generate the log files can be found at https://gitlab.com/torvic9/mini-benchmarker.
