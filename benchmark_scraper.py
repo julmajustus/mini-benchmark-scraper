@@ -108,7 +108,7 @@ def plot_kernel_version_comparison(average_times, mode, kernel_versions):
     # Calculate the width of each bar based on the number of kernel versions
     bar_width = 0.9 / num_kernel_versions  # Adjust this value as needed
 
-    # Calculate font size based on bar_width, font_scale_factor, and num_kernel_versions
+    # Calculate font size based on num_kernel_versions
     font_size = 16 - num_kernel_versions * 0.24
 
     for i, avg_times in enumerate(average_times):
