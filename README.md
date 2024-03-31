@@ -23,7 +23,7 @@ Mini Benchmark Scraper is a Python script designed to extract and parse data fro
 2. Run the script:
 
    ```bash
-   python benchmark_scraper.py```
+   python benchmark_scraper.py``` 
 
 3. Once the script has completed execution, open the generated HTML page (test_performance.html) in your web browser to view the results.
 
