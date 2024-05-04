@@ -7,27 +7,14 @@ from collections import defaultdict
 
 # Function to parse log files and extract test data, system information, and kernel versions
 def parse_log_files():
-    test_data_nano = defaultdict(list)
-    test_data_mini = defaultdict(list)
-    kernel_info_nano = defaultdict(dict)
-    kernel_info_mini = defaultdict(dict)
-    kernel_versions_nano = defaultdict(dict)
-    kernel_versions_mini = defaultdict(dict)
-
-    nano_exists = False
-    mini_exists = False
+    test_data = defaultdict(list)
+    kernel_info = defaultdict(dict)
+    kernel_versions = defaultdict(dict)
 
     for file in os.listdir('.'):
         if file.endswith('.log') and file.startswith('benchie_'):
             with open(file, 'r') as f:
                 data_text = f.read()
-
-            mode_match = re.search(r'Mode: (\w+)', data_text)
-            if mode_match:
-                mode = mode_match.group(1)
-            else:
-                print(f"Warning: Could not determine mode from file: {file}")
-                continue
 
             kernel_version_match = re.search(r'Kernel: (\S+)', data_text)
             if kernel_version_match:
@@ -43,32 +30,14 @@ def parse_log_files():
                 print(f"Warning: Could not extract system information from file: {file}")
                 continue
 
-            if mode == 'nano':
-                nano_exists = True
-                for match in re.finditer(r'(y-cruncher pi 500m|kernel defconfig|xz compression|blender render|Total time \(s\)|Total score): (\d+\.\d+)', data_text):
-                    test_name = match.group(1)
-                    test_time = float(match.group(2))
-                    test_data_nano[(kernel_version, test_name)].append(test_time)
-                    kernel_versions_nano[kernel_version].setdefault(test_name, []).append(test_time)
-                    kernel_info_nano[kernel_version] = system_info
-            elif mode == 'mini':
-                mini_exists = True
-                for match in re.finditer(r'(stress-ng cpu-cache-mem|c-ray render|perf sched msg fork thread|perf sched msg pipe proc|perf memcpy|namd 92K atoms|calculating prime numbers|argon2 hashing|ffmpeg compilation|zstd compression|x265 encoding|Total time \(s\)|Total score): (\d+\.\d+)', data_text):
-                    test_name = match.group(1)
-                    test_time = float(match.group(2))
-                    test_data_mini[(kernel_version, test_name)].append(test_time)
-                    kernel_versions_mini[kernel_version].setdefault(test_name, []).append(test_time)
-                    kernel_info_mini[kernel_version] = system_info
-            else:
-                print(f"Warning: Unknown mode detected in file: {file}")
+            for match in re.finditer(r'(stress-ng cpu-cache-mem|y-cruncher pi 1b|perf sched msg fork thread|perf memcpy|namd 92K atoms|calculating prime numbers|argon2 hashing|ffmpeg compilation|xz compression|kernel defconfig| blender render|x265 encoding|Total time \(s\)|Total score): (\d+\.\d+)', data_text):
+                test_name = match.group(1)
+                test_time = float(match.group(2))
+                test_data[(kernel_version, test_name)].append(test_time)
+                kernel_versions[kernel_version].setdefault(test_name, []).append(test_time)
+                kernel_info[kernel_version] = system_info
 
-    if nano_exists:
-        return test_data_nano, test_data_mini, kernel_info_nano, kernel_info_mini, kernel_versions_nano, kernel_versions_mini
-    elif mini_exists:
-        return test_data_nano, test_data_mini, kernel_info_nano, kernel_info_mini, kernel_versions_nano, kernel_versions_mini
-    else:
-        print("Error: No logs found for any mode.")
-        return None, None, None, None, None, None
+    return test_data, kernel_info, kernel_versions
 
 # Function to aggregate test results
 def aggregate_test_results(data):
@@ -143,33 +112,24 @@ def plot_kernel_version_comparison(average_times, mode, kernel_versions):
     plt.close()
 
 # Extract test data, system information, and kernel versions from .log files
-test_data_nano, test_data_mini, kernel_info_nano, kernel_info_mini, kernel_versions_nano, kernel_versions_mini = parse_log_files()
+test_data, kernel_info, kernel_versions = parse_log_files()
 
-# Check if logs were found for any mode
-if test_data_nano or test_data_mini:
+# Check if logs were found
+if test_data:
     # Get sorted kernel versions
-    sorted_kernel_versions_nano = sorted(kernel_versions_nano.keys())
-    sorted_kernel_versions_mini = sorted(kernel_versions_mini.keys())
+    sorted_kernel_versions = sorted(kernel_versions.keys())
 
-    # Get kernel versions list for nano and mini modes
-    kernel_versions_nano_list = [kernel_version for kernel_version in sorted_kernel_versions_nano]
-    kernel_versions_mini_list = [kernel_version for kernel_version in sorted_kernel_versions_mini]
+    # Get kernel versions list
+    kernel_versions_list = [kernel_version for kernel_version in sorted_kernel_versions]
 
-    # Calculate average test times for each kernel version for nano mode
-    if test_data_nano:
-        average_times_nano = [aggregate_test_results(kernel_versions_nano[kernel_version]) for kernel_version in sorted_kernel_versions_nano]
-        # Plot horizontal bar chart with annotations for nano mode
-        plot_horizontal_bar_chart_with_annotations(average_times_nano, 'Nano', kernel_versions_nano_list)
-        # Plot performance comparison between different kernel versions for nano mode
-        plot_kernel_version_comparison(average_times_nano, 'Nano', kernel_versions_nano_list)
+    # Calculate average test times for each kernel version
+    average_times = [aggregate_test_results(kernel_versions[kernel_version]) for kernel_version in sorted_kernel_versions]
 
-    # Calculate average test times for each kernel version for mini mode
-    if test_data_mini:
-        average_times_mini = [aggregate_test_results(kernel_versions_mini[kernel_version]) for kernel_version in sorted_kernel_versions_mini]
-        # Plot horizontal bar chart with annotations for mini mode
-        plot_horizontal_bar_chart_with_annotations(average_times_mini, 'Mini', kernel_versions_mini_list)
-        # Plot performance comparison between different kernel versions for mini mode
-        plot_kernel_version_comparison(average_times_mini, 'Mini', kernel_versions_mini_list)
+    # Plot horizontal bar chart with annotations
+    plot_horizontal_bar_chart_with_annotations(average_times, 'All', kernel_versions_list)
+
+    # Plot performance comparison between different kernel versions
+    plot_kernel_version_comparison(average_times, 'All', kernel_versions_list)
 
     # Generate HTML page
     html_content = f"""
@@ -184,31 +144,17 @@ if test_data_nano or test_data_mini:
         <h1>Test Performance</h1>
     """
 
-    # Include charts for comparison of different kernel version performance based on average calculations for both modes
-    if test_data_nano:
-        html_content += f"""
-        <h2>Average Test Performance Comparison</h2>
-        <h3>Nano Mode</h3>
-        <img src="average_performance_comparison_horizontal_Nano.png" alt="Average Test Performance Comparison - Nano Mode" style="max-width: 100%; height: auto;">
-        """
-    if test_data_mini:
-        html_content += f"""
-        <h3>Mini Mode</h3>
-        <img src="average_performance_comparison_horizontal_Mini.png" alt="Average Test Performance Comparison - Mini Mode" style="max-width: 100%; height: auto;">
-        """
+    # Include charts for comparison of different kernel version performance based on average calculations
+    html_content += f"""
+    <h2>Average Test Performance Comparison</h2>
+    <img src="average_performance_comparison_horizontal_All.png" alt="Average Test Performance Comparison - All Kernels" style="max-width: 100%; height: auto;">
+    """
 
-    # Include charts for comparison of performance between different kernel versions for both modes
-    if test_data_nano:
-        html_content += f"""
-        <h2>Performance Comparison Between Different Kernel Versions</h2>
-        <h3>Nano Mode</h3>
-        <img src="kernel_version_comparison_Nano.png" alt="Performance Comparison Between Different Kernel Versions - Nano Mode" style="max-width: 100%; height: auto;">
-        """
-    if test_data_mini:
-        html_content += f"""
-        <h3>Mini Mode</h3>
-        <img src="kernel_version_comparison_Mini.png" alt="Performance Comparison Between Different Kernel Versions - Mini Mode" style="max-width: 100%; height: auto;">
-        """
+    # Include charts for comparison of performance between different kernel versions
+    html_content += f"""
+    <h2>Performance Comparison Between Different Kernel Versions</h2>
+    <img src="kernel_version_comparison_All.png" alt="Performance Comparison Between Different Kernel Versions - All Kernels" style="max-width: 100%; height: auto;">
+    """
 
     html_content += """
     </body>
@@ -221,4 +167,5 @@ if test_data_nano or test_data_mini:
 
     print("HTML page generated successfully!")
 else:
-    print("No logs found for any mode. HTML page not generated.")
+    print("No logs found. HTML page not generated.")
+
