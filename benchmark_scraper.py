@@ -30,7 +30,7 @@ def parse_log_files():
                 print(f"Warning: Could not extract system information from file: {file}")
                 continue
 
-            for match in re.finditer(r'(stress-ng cpu-cache-mem|y-cruncher pi 1b|perf sched msg fork thread|perf memcpy|namd 92K atoms|calculating prime numbers|argon2 hashing|ffmpeg compilation|xz compression|kernel defconfig| blender render|x265 encoding|Total time \(s\)|Total score): (\d+\.\d+)', data_text):
+            for match in re.finditer(r'(stress-ng cpu-cache-mem|y-cruncher pi 1b|perf sched msg fork thread|perf memcpy|namd 92K atoms|calculating prime numbers|argon2 hashing|ffmpeg compilation|xz compression|kernel defconfig|blender render|x265 encoding|Total time \(s\)|Total score): (\d+\.\d+)', data_text):
                 test_name = match.group(1)
                 test_time = float(match.group(2))
                 test_data[(kernel_version, test_name)].append(test_time)
